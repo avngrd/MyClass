@@ -1,4 +1,5 @@
 const DEFAULT_CATEGORY = 'All';
+const DEBOUNCE_INTERVAL = 500;
 
 const cardsData = [
     {
@@ -203,6 +204,8 @@ const cardsData = [
     }
 ];
 
+let currentData = [...cardsData];
+
 function renderMarkup(target, markup){
     target.innerHTML = '';
     target.insertAdjacentHTML('afterbegin', markup);
@@ -212,6 +215,15 @@ function removeActiveClasses(elementsList){
     elementsList.forEach(function(itElement){
         itElement.classList.remove("active");
     })
+}
+
+let lastTimeout;
+
+function debounce(callback,evt){
+    if (lastTimeout){
+        clearTimeout(lastTimeout);
+    }
+    lastTimeout = setTimeout(callback, DEBOUNCE_INTERVAL, evt);
 }
 
 function createCategories() {
@@ -224,7 +236,6 @@ function createCategories() {
 
     return Array.from(categories);
 }
-
 
 const cardsList = document.querySelector('.cards');
 
@@ -289,7 +300,6 @@ const categoriesData = categories.map(function(categoryName) {
 categoriesList.innerHTML = ``;
 categoriesList.insertAdjacentHTML(`afterbegin`, categoriesData);
 
-
 function getCurrentData(category){
     if(category === DEFAULT_CATEGORY){
         return [...cardsData];
@@ -301,24 +311,22 @@ function getCurrentData(category){
 }
 
 function getSortedDuration(){
-    cardsData.sort(function(minDuration,maxDuration){
+    return currentData.sort(function(minDuration,maxDuration){
         if(minDuration['duration'] < maxDuration['duration']) return -1;
     })
 }
 
 function getSortedRaiting(){
-    cardsData.sort(function(minRaiting,maxRaiting){
+    return currentData.sort(function(minRaiting,maxRaiting){
         if(minRaiting['rating'] < maxRaiting['rating']) return - 1;
     })
 }
 
 function getSortedPrice(){
-    cardsData.sort(function(minPrice,maxPrice){
+    return  currentData.sort(function(minPrice,maxPrice){
         if(minPrice['price'] < maxPrice['price']) return -1;
     })
 }
-
-
 
 function changeThemes() {
 
@@ -335,7 +343,8 @@ function changeThemes() {
         removeActiveClasses(themesButton);
         targetButton.querySelector(".theme-button").classList.add("active");
     }    
-themesBar.addEventListener("click", themesButtonsClickHandler)
+
+    themesBar.addEventListener("click", themesButtonsClickHandler)
 }
 
 function CardsFilters() {
@@ -360,11 +369,6 @@ function CardsFilters() {
     changeFilterButtons.addEventListener("click", filtersButtonsClickHandler);
 }
 
-changeThemes();
-CardsFilters();
-createCategories();
-
-
 function onCategoriesListClick(evt) {
     evt.preventDefault();
 
@@ -373,14 +377,15 @@ function onCategoriesListClick(evt) {
     if (!button) {
         return;
     } 
-  
+    
     currentCategory = button.dataset.category;
 
-    const currentData = getCurrentData(currentCategory);
+    currentData = getCurrentData(currentCategory);
     renderCards(currentData);
 };
 
-categoriesList.addEventListener('click', onCategoriesListClick);
+const debouncedCategoriesListClick = debounce.bind(null, onCategoriesListClick);
+categoriesList.addEventListener('click', debouncedCategoriesListClick);
 
 const sortList = document.querySelector('.sort-list');
 
@@ -404,7 +409,11 @@ function onSortingListClick(evt){
         const currentPrice = getSortedPrice();
         renderCards(currentPrice);
     }
-    
 }  
 
-sortList.addEventListener('click', onSortingListClick);
+const debouncedSortingListCLick = debounce.bind(null, onSortingListClick);
+sortList.addEventListener('click', debouncedSortingListCLick);
+
+changeThemes();
+CardsFilters();
+createCategories();
